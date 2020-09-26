@@ -34,12 +34,16 @@ text
 
 ### Michael Styron
 
-* task
+* empty.c
+* empty.trace
+* part1.c
+* part1.trace
 
 ### Nicholas Tidwell
 
-* task
+* 
 
 ### William Tsaur
 
-* task
+* my_timer.c
+* Makefile (for Part 2)
