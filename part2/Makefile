@@ -3,7 +3,7 @@ obj-m:=my_timer.o
 PWD:=`pwd`
 KERNELDIR:=/lib/modules/`uname -r`/build
 
-default:
+all:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
 
 clean:
