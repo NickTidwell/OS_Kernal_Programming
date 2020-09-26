@@ -21,7 +21,7 @@ static ssize_t read(struct file* file, char *ubuf, size_t count, loff_t *ppos) {
     
     struct timespec currTime = current_kernel_time();
 
-    if (*ppos > 0 || cout < BUFSIZE)
+    if (*ppos > 0 || cout < len)
         return 0;
     
     len += sprintf(buf, "current time: %li.%li\n", currTime.tv_sec, currTime.tv_nsec);
