@@ -19,7 +19,7 @@ static ssize_t read(struct file* file, char *ubuf, size_t count, loff_t *ppos) {
     char buf[BUF_LEN];
     int len = 0;
     
-    struct timespec currTime - current_kernel_time();
+    struct timespec currTime = current_kernel_time();
 
     if (*ppos > 0 || cout < BUFSIZE)
         return 0;
