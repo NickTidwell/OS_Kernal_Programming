@@ -15,7 +15,7 @@ text
 text
 
 ### Part 3
-
+You Can Clone the Repo Anywhere but make sure to copy the contents of part 3 directly into /usr/src/linux-4.19.98
 text
 
 ## Contents of Tar File
