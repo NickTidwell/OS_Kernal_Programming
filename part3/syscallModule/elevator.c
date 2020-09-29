@@ -8,11 +8,12 @@
 #include <linux/kernel.h>
 #include <linux/linkage.h>
 #include <linux/list.h>
-#include <syscall.h>
 
 MODULE_LICENSE("DUAL BSD/GPL");
 
 void addToQueue(int, int, int);
+void print_elevator(void);
+
 #define NUM_FLOORS 10
 
 //Elevator States
@@ -55,7 +56,7 @@ struct list_head elevator_list; //queue of elevator
 static ssize_t elevator_read(struct file* file, char * ubuf, size_t count, loff_t *ppos)
 {
 	printk(KERN_INFO "Elevator State: %d\n Elevator Satus: %d\n Current Floor: %d\n  Number of Passengers: %d\n Number or Passengers Waiting: %d\n Number Passengers Serviced: %d\n", elevator_state, elevator_state, curr_floor, num_passenger, passenger_waiting, passenger_served);
-	
+	print_elevator();
 	procfs_buf_len = strlen(msg);
 
 	if (*ppos > 0 || count < procfs_buf_len)
@@ -72,7 +73,6 @@ static ssize_t elevator_read(struct file* file, char * ubuf, size_t count, loff_
 static ssize_t elevator_write(struct file* file, const char * ubuf, size_t count, loff_t* ppos)
 {
 	printk(KERN_INFO "elevator proc_write test\n");
-	
 	if (count > BUF_LEN)
 		procfs_buf_len = BUF_LEN;
 	else
@@ -149,7 +149,6 @@ static int elevator_init(void) {
 	return 0;
 }
 
-
 static void elevator_exit(void) {
 	STUB_start_elevator = NULL;
 	STUB_stop_elevator = NULL;
@@ -168,9 +167,22 @@ void addToQueue(int start, int stop, int type){
 	list_add_tail(&new_member->list, &passenger_queue[start-1]);
 }
 
-void testCall()
+void print_elevator()
 {
-	printk("Test Call");
+	struct list_head *qPos;
+	struct queue_member *qMember;
+	int i = 0;
+	int queuePos = 0;
+	while(i < NUM_FLOORS){
+
+		printk("Floor: %d\n", i+1);
+		list_for_each(qPos, &passenger_queue[i]){
+			qMember = list_entry(qPos, queue_member, list);
+			printk("Queue pos: %d\nType: %d\nStart Floor: %d\nDest Floor: %d\n", queuePos, qMember->type, qMember->start_floor, qMember->dest_floot);
+      		++queuePos;
+		}
+		i++;
+	}
 }
 
 
