@@ -2,7 +2,6 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/linkage.h>
-#include <syscalls.h>
 
 MODULE_LICENSE("GPL");
 extern long (*STUB_start_elevator)(void);
@@ -27,11 +26,11 @@ long stop_elevator(void) {
 	return 1;
 }
 
-static void elevator_init(void) {
+static int elevator_sys_init(void) {
 	STUB_start_elevator = start_elevator;
 	STUB_stop_elevator = stop_elevator;
 	STUB_issue_request = issue_request;
-
+	return 0;
 }
 
 
@@ -41,7 +40,7 @@ static void elevator_exit(void) {
 	STUB_issue_request = NULL;
 }
 
-module_init(elevator_init);
+module_init(elevator_sys_init);
 module_exit(elevator_exit);
 
 
