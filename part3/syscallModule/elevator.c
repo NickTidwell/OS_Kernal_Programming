@@ -5,11 +5,15 @@
 #include <linux/uaccess.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
+#include <linux/kernel.h>
+#include <linux/linkage.h>
+#include <linux/list.h>
+#include <syscall.h>
 
 MODULE_LICENSE("DUAL BSD/GPL");
 
-#define BUF_LEN 100
-
+void addToQueue(int, int, int);
+#define NUM_FLOORS 10
 
 //Elevator States
 #define OFFLINE 0
@@ -22,6 +26,8 @@ MODULE_LICENSE("DUAL BSD/GPL");
 #define INFECTED 1;
 
 #define NUM_FLOOR 10;
+#define BUF_LEN 100
+
 static struct proc_dir_entry* proc_entry;
 static char msg[BUF_LEN];
 static int procfs_buf_len;
@@ -34,6 +40,17 @@ int num_passenger;
 int passenger_waiting;
 int	infected_status;
 int passenger_served;
+
+typedef struct queue_member {
+
+	struct list_head list;
+	int type;
+	int start_floor;
+	int dest_floot;
+} queue_member;
+
+struct list_head passenger_queue[NUM_FLOORS]; //queue of passenger
+struct list_head elevator_list; //queue of elevator
 
 static ssize_t elevator_read(struct file* file, char * ubuf, size_t count, loff_t *ppos)
 {
@@ -65,16 +82,53 @@ static ssize_t elevator_write(struct file* file, const char * ubuf, size_t count
 	printk(KERN_INFO "got from user: %s\n", msg);
 	return procfs_buf_len;
 }
-
-
 static struct file_operations procfile_fops = {
 	.owner = THIS_MODULE,
 	.read = elevator_read,
 	.write = elevator_write,
 };
+extern long (*STUB_start_elevator)(void);
+long start_elevator(void) {
+	printk("Start Request");
+	//Implement Start Elevator Below
+	return 1;
+}
 
-static int elevator_init(void)
-{
+extern long (*STUB_issue_request)(int,int,int);
+long issue_request(int start, int stop, int type) {
+	
+	printk("Issue Request: start = %d, stop = %d, type = %d\n", start, stop, type);
+
+	if(start == stop){
+		//We are already at the desination floor dummy
+	}
+	else{
+		addToQueue(start, stop, type);
+	}
+	return 1;
+
+}
+
+extern long (*STUB_stop_elevator)(void);
+long stop_elevator(void) {
+	printk("Stop Request");
+	return 1;
+}
+
+static int elevator_init(void) {
+	STUB_start_elevator = start_elevator;
+	STUB_stop_elevator = stop_elevator;
+	STUB_issue_request = issue_request;
+
+	//Initialize queue on each floor
+	int i = 0;
+	while (i < NUM_FLOORS) 
+	{
+    	INIT_LIST_HEAD(&passenger_queue[i]);
+    	i++;
+  	}
+  	INIT_LIST_HEAD(&elevator_list);
+
 	int curr_floor = 1;
 	int next_floor = 1;
 	int elevator_state = OFFLINE;
@@ -90,18 +144,38 @@ static int elevator_init(void)
 	{	
 		 return -ENOMEM;
 	}
+	printk(KERN_ALERT "Elevator INIT Exit\n");
 
-	//elevator_sys_init();
 	return 0;
 }
 
-static void elevator_exit(void)
-{
+
+static void elevator_exit(void) {
+	STUB_start_elevator = NULL;
+	STUB_stop_elevator = NULL;
+	STUB_issue_request = NULL;
 	printk(KERN_ALERT "Elevator EXIT\n");
 	proc_remove(proc_entry);
 	return;
-
 }
+
+void addToQueue(int start, int stop, int type){
+	struct queue_member *new_member;
+	new_member = kmalloc(sizeof(struct queue_member), __GFP_RECLAIM);
+	new_member->start_floor = start;
+	new_member->dest_floot = stop;
+	new_member->type = type;
+	list_add_tail(&new_member->list, &passenger_queue[start-1]);
+}
+
+void testCall()
+{
+	printk("Test Call");
+}
+
 
 module_init(elevator_init);
 module_exit(elevator_exit);
+
+
+

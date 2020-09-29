@@ -1,1 +1,0 @@
-cmd_/usr/src/linux-4.19.98/elevator/elevator.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 -T ./scripts/module-common.lds  --build-id  -o /usr/src/linux-4.19.98/elevator/elevator.ko /usr/src/linux-4.19.98/elevator/elevator.o /usr/src/linux-4.19.98/elevator/elevator.mod.o ;  true
