@@ -16,8 +16,9 @@ MODULE_LICENSE("DUAL BSD/GPL");
 void addToQueue(int, int, int);
 void print_elevator(void);
 void change_floor(int);
+void loadPassenger(int);
+void unloadPassenger(void);
 
-#define NUM_FLOORS 10
 
 //Elevator States
 #define OFFLINE 0
@@ -26,25 +27,30 @@ void change_floor(int);
 #define UP 3
 #define DOWN 4
 
-#define UNINFECTED 0;
-#define INFECTED 1;
+#define UNINFECTED 0
+#define INFECTED 1
 
-#define NUM_FLOOR 10;
+#define NUM_FLOOR 10
+#define MAX_CAPACITY 10
 #define BUF_LEN 100
 
 static struct proc_dir_entry* proc_entry;
 static char msg[BUF_LEN];
 static int procfs_buf_len;
 
-int curr_floor;
-int next_floor;
-int elevator_state;
+int curr_floor = 1;
+int next_floor = 1;
+int elevator_state = OFFLINE;
 // int elevator_direction;
-int num_passenger;
-int passenger_waiting;
-int	infected_status;
-int passenger_served;
+int num_passenger=  0;
+int passenger_waiting_total = 0;
+int	infected_status = UNINFECTED;
+int passenger_served = 0;
 int stop_signal = 0;
+
+
+
+
 typedef struct queue_member {
 
 	struct list_head list;
@@ -56,9 +62,10 @@ typedef struct queue_member {
 
 struct task_struct *elevator_thread;
 
-struct list_head passenger_queue[NUM_FLOORS]; //queue of passenger
+struct list_head passenger_queue[NUM_FLOOR]; //queue of passenger per floor
 struct list_head elevator_list; //queue of elevator
 
+int passenger_waiting[NUM_FLOOR]; //Keep Track of count per floor
 
 static int run_elevator(void *data){
 
@@ -77,6 +84,8 @@ static int run_elevator(void *data){
 			case UP:
 				change_floor(next_floor);
 				printk(KERN_INFO "Elevator UP");
+				unloadPassenger();
+				loadPassenger(curr_floor);
 				if(curr_floor == 10){
 					elevator_state = DOWN;
 					next_floor = curr_floor - 1;
@@ -86,6 +95,8 @@ static int run_elevator(void *data){
 			case DOWN:
 				change_floor(next_floor);
 				printk(KERN_INFO "Elevator Down");
+				unloadPassenger();
+				loadPassenger(curr_floor);
 				if(curr_floor == 1){
 					elevator_state = UP;
 					next_floor = curr_floor + 1;
@@ -117,7 +128,7 @@ void change_floor(int floor){
 
 static ssize_t elevator_read(struct file* file, char * ubuf, size_t count, loff_t *ppos)
 {
-	printk(KERN_INFO "Elevator State: %d\n Elevator Satus: %d\n Current Floor: %d\n  Number of Passengers: %d\n Number or Passengers Waiting: %d\n Number Passengers Serviced: %d\n", elevator_state, infected_status, curr_floor, num_passenger, passenger_waiting, passenger_served);
+	printk(KERN_INFO "Elevator State: %d\n Elevator Satus: %d\n Current Floor: %d\n  Number of Passengers: %d\n Number or Passengers Waiting: %d\n Number Passengers Serviced: %d\n", elevator_state, infected_status, curr_floor, num_passenger, passenger_waiting_total, passenger_served);
 	print_elevator();
 	procfs_buf_len = strlen(msg);
 
@@ -162,7 +173,8 @@ extern long (*STUB_issue_request)(int,int,int);
 long issue_request(int start, int stop, int type) {
 	
 	printk("Issue Request: start = %d, stop = %d, type = %d\n", start, stop, type);
-
+	passenger_waiting_total++;
+	passenger_waiting[start-1]++;
 	if(start == stop){
 		//We are already at the desination floor dummy
 	}
@@ -183,6 +195,7 @@ long stop_elevator(void) {
 	return 1;
 }
 
+
 static int elevator_init(void) {
 	printk(KERN_ALERT "Elevator INIT\n");
 
@@ -192,32 +205,23 @@ static int elevator_init(void) {
 
 	//Initialize queue on each floor
 	int i = 0;
-	while (i < NUM_FLOORS) 
+	while (i < NUM_FLOOR) 
 	{
     	INIT_LIST_HEAD(&passenger_queue[i]);
+		passenger_waiting[i] = 0;
     	i++;
   	}
   	INIT_LIST_HEAD(&elevator_list);
 
-	int curr_floor = 1;
-	int next_floor = 1;
-	int elevator_state = OFFLINE;
-	int elevator_next_dir = UP;
-	int num_passenger = 0;
-	int	infected_status = UNINFECTED;
-	int passenger_served = 0;
-	passenger_waiting = 0;
-
-	printk(KERN_ALERT "Elevator Thread Cretae\n");
 
 	//Initialize Elevator Thread
 	 elevator_thread = kthread_run(run_elevator, NULL, "mythread");
-    // if(IS_ERR(elevator_thread)) {
-    //   printk("Error: ElevatorRun\n");
-    //   return PTR_ERR(elevator_thread);
-    // }
-	// else
-	// 	printk(KERN_INFO "Thread Created Successfully\n");c
+    if(IS_ERR(elevator_thread)) {
+      printk("Error: ElevatorRun\n");
+      return PTR_ERR(elevator_thread);
+    }
+	else
+		printk(KERN_INFO "Thread Created Successfully\n");
 
 
 	//Initialize Proc Entry
@@ -255,20 +259,78 @@ void print_elevator()
 {
 	struct list_head *qPos;
 	struct queue_member *qMember;
-	int i = 0;
+	int i = NUM_FLOOR;
 	int queuePos = 0;
-	while(i < NUM_FLOORS){
+	while(i > 0){
+		printk(KERN_INFO "[");
+		if(curr_floor == i) 
+			printk(KERN_CONT "*");
+		else 
+			printk(KERN_CONT " ");
 
-		printk("Floor: %d\n", i+1);
-		list_for_each(qPos, &passenger_queue[i]){
+		printk(KERN_CONT "] Floor %d:\t%d\t", i, passenger_waiting[i - 1]);
+
+		list_for_each(qPos, &passenger_queue[i-1]){
 			qMember = list_entry(qPos, queue_member, list);
-			printk("Queue pos: %d\nType: %d\nStart Floor: %d\nDest Floor: %d\n", queuePos, qMember->type, qMember->start_floor, qMember->dest_floot);
-      		++queuePos;
+
+			if(qMember->type == 0)
+				printk(KERN_CONT "| ");
+			else
+			{
+				printk(KERN_CONT "X ");
+			}
+			
+
 		}
-		i++;
+		printk(KERN_CONT "\n");
+		i--;
 	}
 }
 
+void loadPassenger(int floor){
+
+	//Loop through floor queue
+	//Move people on elevator list
+	//Remove people from queue_list
+	struct queue_member *entry;
+	struct list_head *pos, *q;
+
+	list_for_each_safe(pos, q, &passenger_queue[floor -1]){
+		entry = list_entry(pos, struct queue_member, list);
+
+		if(entry->start_floor == floor && num_passenger < MAX_CAPACITY){
+			struct queue_member *new_member;
+			new_member = kmalloc(sizeof(struct queue_member), __GFP_RECLAIM);
+			new_member->start_floor = entry->start_floor;
+			new_member->dest_floot = entry->dest_floot;
+			new_member->type = entry->type;
+
+			list_add_tail(&new_member->list, &elevator_list);
+			list_del(pos);
+			kfree(entry);
+	  		passenger_waiting_total--;
+			passenger_waiting[floor-1]++;
+
+			num_passenger++;
+		}
+	}
+}
+
+void unloadPassenger(){
+  struct queue_member *entry;
+  struct list_head *pos, *q;
+
+  list_for_each_safe(pos, q, &elevator_list) {
+    entry = list_entry(pos, struct queue_member, list);
+
+    if (entry->dest_floot == curr_floor) { 
+      passenger_served++;
+	  num_passenger--;
+      list_del(pos);
+      kfree(entry);
+    }
+  }
+}
 
 module_init(elevator_init);
 module_exit(elevator_exit);
