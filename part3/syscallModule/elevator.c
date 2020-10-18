@@ -51,6 +51,8 @@ int infected_status = UNINFECTED;
 int passenger_served = 0;
 int stop_signal = 0;
 int state_before_loading = 0;
+int max_up = 0;
+int max_down = 11;
 
 typedef struct queue_member {
 	struct list_head list;
@@ -90,11 +92,13 @@ static int run_elevator(void *data)
 				change_floor(next_floor);
 				printk(KERN_INFO "Elevator UP");
 
-				if(curr_floor == 10){
+				if(curr_floor == 10 || curr_floor == max_up){
 				elevator_state = DOWN;
 				next_floor = curr_floor - 1;
 				}
 				else next_floor = curr_floor + 1;
+
+				max_up = 0;
 
 				if(checkLoad(curr_floor) || checkUnload()){
 				state_before_loading = elevator_state;
@@ -106,13 +110,15 @@ static int run_elevator(void *data)
 				change_floor(next_floor);
 				printk(KERN_INFO "Elevator Down");
 
-				if(curr_floor == 1){
+				if(curr_floor == 1 || curr_floor == max_down){
 				elevator_state = UP;
 				next_floor = curr_floor + 1;
 				}
 				else next_floor = curr_floor - 1;
 
-				if(stop_signal == 1 && curr_floor == 1 && passenger_waiting_total == 0) 
+				max_down = 11;
+
+				if(stop_signal == 1 && curr_floor == 1 && passenger_waiting_total == 0)
 				{
 				elevator_state = OFFLINE;
 				stop_signal = 0;
@@ -327,6 +333,12 @@ int checkLoad(int floor)
 		if (entry->start_floor == floor &&
 		    num_passenger < MAX_CAPACITY) {
 			mutex_unlock(&passenger_queue_mutex);
+			if (floor > max_up && elevator_state != UP) {
+				max_up = floor;
+			}
+			if (floor < max_down && elevator_state != DOWN) {
+				max_down = floor;
+			}
 			return 1;
 		}
 	}
