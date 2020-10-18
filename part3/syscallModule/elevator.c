@@ -333,12 +333,6 @@ int checkLoad(int floor)
 		if (entry->start_floor == floor &&
 		    num_passenger < MAX_CAPACITY) {
 			mutex_unlock(&passenger_queue_mutex);
-			if (floor > max_up && elevator_state != UP) {
-				max_up = floor;
-			}
-			if (floor < max_down && elevator_state != DOWN) {
-				max_down = floor;
-			}
 			return 1;
 		}
 	}
@@ -366,6 +360,13 @@ void loadPassenger(int floor)
 			new_member->start_floor = entry->start_floor;
 			new_member->dest_floor = entry->dest_floor;
 			new_member->type = entry->type;
+			//changes max_up/max_down to highest/lowest destination
+			if (new_member->dest_floor > max_up) {
+				max_up = new_member->dest_floor;
+			}
+			if (new_member->dest_floor < max_down) {
+				max_down = new_member->dest_floor;
+			}
 
 			if (infected_status == UNINFECTED && entry->type == 1) {
 				newly_infected =
