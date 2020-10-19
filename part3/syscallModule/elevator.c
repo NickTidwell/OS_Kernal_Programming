@@ -53,6 +53,7 @@ int stop_signal = 0;
 int state_before_loading = 0;
 int max_up = 0;
 int max_down = 11;
+int change_floor_check = 0; 	//psuedo bool value
 
 typedef struct queue_member {
 	struct list_head list;
@@ -92,13 +93,19 @@ static int run_elevator(void *data)
 				change_floor(next_floor);
 				printk(KERN_INFO "Elevator UP");
 
-				if(curr_floor == 10 || curr_floor == max_up){
+				if(max_up != 0){
+					if(max_up <= curr_floor){
+						change_floor_check = 1;
+					}
+				}
+
+				if(curr_floor == 10 || change_floor_check == 1){
 				elevator_state = DOWN;
 				next_floor = curr_floor - 1;
+				change_floor_check = 0;
+				max_up = 0;
 				}
 				else next_floor = curr_floor + 1;
-
-				max_up = 0;
 
 				if(checkLoad(curr_floor) || checkUnload()){
 				state_before_loading = elevator_state;
@@ -110,13 +117,19 @@ static int run_elevator(void *data)
 				change_floor(next_floor);
 				printk(KERN_INFO "Elevator Down");
 
-				if(curr_floor == 1 || curr_floor == max_down){
+				if(max_down != 0){
+					if(max_down >= curr_floor){
+						change_floor_check = 1;
+					}
+				}
+
+				if(curr_floor == 1 || change_floor_check == 1){
 				elevator_state = UP;
 				next_floor = curr_floor + 1;
+				change_floor_check = 0;
+				max_down = 11;
 				}
 				else next_floor = curr_floor - 1;
-
-				max_down = 11;
 
 				if(stop_signal == 1 && curr_floor == 1 && passenger_waiting_total == 0)
 				{
