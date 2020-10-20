@@ -117,7 +117,7 @@ static int run_elevator(void *data)
 				change_floor(next_floor);
 				printk(KERN_INFO "Elevator Down");
 
-				if(max_down != 0){
+				if(max_down != 11){
 					if(max_down >= curr_floor){
 						change_floor_check = 1;
 					}
