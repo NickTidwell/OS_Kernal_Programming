@@ -20,12 +20,12 @@ static ssize_t read(struct file* file, char *ubuf, size_t count, loff_t *ppos) {
     int len = 0;
     struct timespec currTime = current_kernel_time(), elapTime;
 
-    if (*ppos > 0 || cout < len)
+    if (*ppos > 0 || count < len)
         return 0;
     
     len += sprintf(buf, "current time: %li.%09%li\n", currTime.tv_sec, currTime.tv_nsec);
     
-    if (prevTime.tv_sec >= 0 && prevTime.tv_nsec > 0) {
+    if (prevTime.tv_sec >= 0 && prevTime.tv_nsec >= 0) {
         elapTime = timespec_sub(currTime, prevTime);
         len += spritnf(buf + len, "elapsed time: %li.%09%li\n", elapTime.tv_sec, elapTime.tv_nsec);
     }

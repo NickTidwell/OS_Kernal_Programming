@@ -14,7 +14,7 @@
 MODULE_LICENSE("DUAL BSD/GPL");
 
 void addToQueue(int, int, int);
-void print_elevator(void);
+void print_elevator(char*, int*);
 void change_floor(int);
 void loadPassenger(int);
 void unloadPassenger(void);
@@ -35,7 +35,7 @@ char *statusToString(int);
 
 #define NUM_FLOOR 10
 #define MAX_CAPACITY 10
-#define BUF_LEN 100
+#define BUF_LEN 10000
 
 static struct proc_dir_entry *proc_entry;
 static char msg[BUF_LEN];
@@ -166,22 +166,26 @@ void change_floor(int floor)
 static ssize_t elevator_read(struct file *file, char *ubuf, size_t count,
 			     loff_t *ppos)
 {
-	printk(KERN_INFO
-	       "Elevator State: %s\n Elevator status: %s\n Current Floor: %d\n  Number of Passengers: %d\n Number or Passengers Waiting: %d\n Number Passengers Serviced: %d\n",
+	char buf[BUF_LEN];
+	int len = 0;
+
+	if (*ppos > 0 || count < len)
+		return 0;
+
+	len += sprintf(buf, "Elevator State: %s\n Elevator status: %s\n Current Floor: %d\n  Number of Passengers: %d\n Number or Passengers Waiting: %d\n Number Passengers Serviced: %d\n",
 	       stateToString(elevator_state), statusToString(infected_status),
 	       curr_floor, num_passenger, passenger_waiting_total,
 	       passenger_served);
-	print_elevator();
-	procfs_buf_len = strlen(msg);
+	
+	print_elevator(&buf, &len);
 
-	if (*ppos > 0 || count < procfs_buf_len)
-		return 0;
-	if (copy_to_user(ubuf, msg, procfs_buf_len))
+	if (copy_to_user(ubuf, buf, len))
 		return -EFAULT;
 
-	*ppos = procfs_buf_len;
-	return procfs_buf_len;
+	*ppos = len;
+	return len;
 }
+
 static ssize_t elevator_write(struct file *file, const char *ubuf, size_t count,
 			      loff_t *ppos)
 {
@@ -302,7 +306,7 @@ void addToQueue(int start, int stop, int type)
 	mutex_unlock(&passenger_queue_mutex);
 }
 
-void print_elevator()
+void print_elevator(char* buf, int* len)
 {
 	struct list_head *qPos;
 	struct queue_member *qMember;
@@ -310,25 +314,25 @@ void print_elevator()
 	int queuePos = 0;
 	mutex_lock_interruptible(&passenger_queue_mutex);
 	while (i > 0) {
-		printk(KERN_INFO "[");
+		(*len) += sprintf((*buf) + (*len), "[");
 		if (curr_floor == i)
-			printk(KERN_CONT "*");
+			(*len) += sprintf((*buf) + (*len), "*");
 		else
-			printk(KERN_CONT " ");
+			(*len) += sprintf((*buf) + (*len), " ");
 
-		printk(KERN_CONT "] Floor %d:\t%d\t", i,
-		       passenger_waiting[i - 1]);
+		(*len) += sprintf((*buf) + (*len), "] Floor %d:\t%d\t", i,
+				passenger_waiting[i - 1]);
 
 		list_for_each (qPos, &passenger_queue[i - 1]) {
 			qMember = list_entry(qPos, queue_member, list);
 
 			if (qMember->type == 0)
-				printk(KERN_CONT "| ");
+				(*len) += sprintf((*buf) + (*len), "| ");
 			else {
-				printk(KERN_CONT "X ");
+				(*len) += sprintf((*buf) + (*len), "X ");
 			}
 		}
-		printk(KERN_CONT "\n");
+		(*len) += sprintf((*buf) + (*len), "\n");
 		i--;
 	}
 	mutex_unlock(&passenger_queue_mutex);
