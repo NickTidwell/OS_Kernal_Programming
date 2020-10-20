@@ -41,8 +41,11 @@ text
 
 ### Nicholas Tidwell
 
-* 
-
+* Setup System Calls
+* Implement Elevator threading
+* Setup Proc Calls
+* Implement wait queue and elevator queue
+* Add zombie & human pickup / dropoff logic
 ### William Tsaur
 
 * my_timer.c
