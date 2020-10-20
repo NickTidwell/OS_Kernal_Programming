@@ -16,11 +16,21 @@ text
 
 ### Part 3
 You Can Clone the Repo Anywhere but make sure to copy the contents of part 3 directly into /usr/src/linux-4.19.98
-text
 
 ## Contents of Tar File
 
-text
+* Part 1 folder
+  * empty.c
+  * empty.trace
+  * part1.c
+  * part1.trace
+* Part 2 folder
+  * Makefile
+  * my_timer.c
+* Part 3 folder
+  * elevator.c
+  * Makefile
+* README.md
 
 ## How to make executable file
 
@@ -28,7 +38,7 @@ text
 
 ## Known Bugs
 
-* bug
+* none
 
 ## Credits
 
@@ -38,6 +48,8 @@ text
 * empty.trace
 * part1.c
 * part1.trace
+* modified scheduling algorithm
+* README.md
 
 ### Nicholas Tidwell
 
@@ -46,7 +58,11 @@ text
 * Setup Proc Calls
 * Implement wait queue and elevator queue
 * Add zombie & human pickup / dropoff logic
+* README.md
+
 ### William Tsaur
 
 * my_timer.c
 * Makefile (for Part 2)
+* modified elevator.c proc implementation
+* README.md
