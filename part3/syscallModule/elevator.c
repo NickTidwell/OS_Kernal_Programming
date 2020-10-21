@@ -35,7 +35,7 @@ char *statusToString(int);
 
 #define NUM_FLOOR 10
 #define MAX_CAPACITY 10
-#define BUF_LEN 10000
+#define BUF_LEN 1000
 
 static struct proc_dir_entry *proc_entry;
 static char msg[BUF_LEN];
@@ -244,6 +244,7 @@ long stop_elevator(void)
 
 static int elevator_init(void)
 {
+	int i = 0;
 	printk(KERN_ALERT "Elevator INIT\n");
 
 	STUB_start_elevator = start_elevator;
@@ -253,7 +254,6 @@ static int elevator_init(void)
 	mutex_init(&elevator_mutex);
 	mutex_init(&passenger_queue_mutex);
 	//Initialize queue on each floor
-	int i = 0;
 	while (i < NUM_FLOOR) {
 		INIT_LIST_HEAD(&passenger_queue[i]);
 		passenger_waiting[i] = 0;
