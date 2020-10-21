@@ -177,7 +177,7 @@ static ssize_t elevator_read(struct file *file, char *ubuf, size_t count,
 	       curr_floor, num_passenger, passenger_waiting_total,
 	       passenger_served);
 	
-	print_elevator(&buf, &len);
+	print_elevator(buf, &len);
 
 	if (copy_to_user(ubuf, buf, len))
 		return -EFAULT;
@@ -311,7 +311,6 @@ void print_elevator(char* buf, int* len)
 	struct list_head *qPos;
 	struct queue_member *qMember;
 	int i = NUM_FLOOR;
-	int queuePos = 0;
 	mutex_lock_interruptible(&passenger_queue_mutex);
 	while (i > 0) {
 		(*len) += sprintf(buf + (*len), "[");
