@@ -4,8 +4,6 @@
 
 ## Project Description
 
-text
-
 ### Part 1
 
 text

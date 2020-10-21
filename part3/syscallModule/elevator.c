@@ -314,25 +314,25 @@ void print_elevator(char* buf, int* len)
 	int queuePos = 0;
 	mutex_lock_interruptible(&passenger_queue_mutex);
 	while (i > 0) {
-		(*len) += sprintf((*buf) + (*len), "[");
+		(*len) += sprintf(buf + (*len), "[");
 		if (curr_floor == i)
-			(*len) += sprintf((*buf) + (*len), "*");
+			(*len) += sprintf(buf + (*len), "*");
 		else
-			(*len) += sprintf((*buf) + (*len), " ");
+			(*len) += sprintf(buf + (*len), " ");
 
-		(*len) += sprintf((*buf) + (*len), "] Floor %d:\t%d\t", i,
+		(*len) += sprintf(buf + (*len), "] Floor %d:\t%d\t", i,
 				passenger_waiting[i - 1]);
 
 		list_for_each (qPos, &passenger_queue[i - 1]) {
 			qMember = list_entry(qPos, queue_member, list);
 
 			if (qMember->type == 0)
-				(*len) += sprintf((*buf) + (*len), "| ");
+				(*len) += sprintf(buf + (*len), "| ");
 			else {
-				(*len) += sprintf((*buf) + (*len), "X ");
+				(*len) += sprintf(buf + (*len), "X ");
 			}
 		}
-		(*len) += sprintf((*buf) + (*len), "\n");
+		(*len) += sprintf(buf + (*len), "\n");
 		i--;
 	}
 	mutex_unlock(&passenger_queue_mutex);
